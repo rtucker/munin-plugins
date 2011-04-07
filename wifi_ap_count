@@ -1,0 +1,28 @@
+#!/bin/bash
+
+# Checks nm-tool for some useful stats
+# Ryan Tucker <rtucker@gmail.com>
+
+do_ () { # Fetch
+    apcount="$(nm-tool | grep Infra | cut -d ',' -f2 | sort | uniq | wc -l)"
+    echo "access_points_visible $apcount"
+    exit 0
+}
+
+do_config () {
+    echo "graph_title Wireless access point count"
+    echo "graph_category network"
+    echo "access_points_visible.label Access Points (APs)"
+    exit 0
+}
+
+do_autoconf () {
+    echo "no (need to fix this)"
+    exit 0
+}
+
+case $1 in
+    config|autoconf|'')
+        eval do_$1
+esac
+
