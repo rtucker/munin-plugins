@@ -5,7 +5,7 @@
 
 do_ () { # Fetch
     apcount="$(nm-tool | grep Infra | cut -d ',' -f2 | sort | uniq | wc -l)"
-    echo "access_points_visible $apcount"
+    echo "access_points_visible.value $apcount"
     exit 0
 }
 
