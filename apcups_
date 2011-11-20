@@ -35,7 +35,8 @@ my %func = (
 	'status' => \&status,
 	'temp' => \&temp,
 	'freq' => \&freq,
-    'linevolts' => \&linevolts,
+	'linevolts' => \&linevolts,
+	'battvolts' => \&battvolts,
 );
 
 $0 =~ /apcups_(.+)*$/;
@@ -46,7 +47,7 @@ exit 0;
 
 sub temp {
 	if( $ARGV[0] eq 'config' ) {
-		print "graph_title Temperature $data{MODEL}\n";
+		print "graph_title UPS $data{UPSNAME} temperature\n";
 		print "graph_category Sensors\n";
 		print "graph_vlabel temp in °C\n";
 		print "itemp.label temperature\n";
@@ -58,7 +59,7 @@ sub temp {
 
 sub times {
 	if( $ARGV[0] eq 'config' ) {
-		print "graph_title Times $data{MODEL}\n";
+		print "graph_title UPS $data{UPSNAME} times\n";
 		print "graph_category Sensors\n";
 		print "graph_vlabel minutes\n";
 		print "timeleft.label Time left\n" if $data{TIMELEFT};
@@ -82,7 +83,7 @@ sub times {
 
 sub status {
 	if( $ARGV[0] eq 'config' ) {
-		print "graph_title Status $data{MODEL}\n";
+		print "graph_title UPS $data{UPSNAME} status\n";
 		print "graph_category Sensors\n";
 		print "graph_vlabel %\n";
         print "graph_args --logarithmic -l 1 -u 100\n";
@@ -98,7 +99,7 @@ sub status {
 
 sub freq {
 	if( $ARGV[0] eq 'config' ) {
-		print "graph_title Frequency $data{MODEL}\n";
+		print "graph_title UPS $data{UPSNAME} frequency\n";
 		print "graph_category Sensors\n";
 		print "graph_vlabel Frequency in Hertz\n";
 		print "linefreq.label Line frequency\n";
@@ -110,7 +111,7 @@ sub freq {
 
 sub volts {
 	if( $ARGV[0] eq 'config' ) {
-		print "graph_title Voltage $data{MODEL}\n";
+		print "graph_title UPS $data{UPSNAME} voltages\n";
 		print "graph_category Sensors\n";
 		print "graph_vlabel volts\n";
         print "graph_args --alt-autoscale\n";
@@ -135,17 +136,23 @@ sub volts {
 
 sub linevolts {
 	if( $ARGV[0] eq 'config' ) {
-		print "graph_title Line Voltage $data{MODEL}\n";
+		print "graph_title UPS $data{UPSNAME} line voltages\n";
 		print "graph_category Sensors\n";
 		print "graph_vlabel volts\n";
         print "graph_args --alt-autoscale\n";
+		print "hitrans.label Upper threshold\n" if $data{HITRANS};
+		print "lotrans.label Lower threshold\n" if $data{LOTRANS};
 		print "linev.label Line in\n" if $data{LINEV};
 		print "linev.info Current line voltage at UPS input\n" if $data{LINEV};
         print "linev.warning ", $num{NOMINV}-int(3*$num{NOMINV}/100), ":", $num{NOMINV}+int(3*$num{NOMINV}/100), "\n" if $data{NOMINV} and $data{LINEV};
         print "linev.critical ", $num{NOMINV}-int(7*$num{NOMINV}/100), ":", $num{NOMINV}+int(7*$num{NOMINV}/100), "\n" if $data{NOMINV} and $data{LINEV};
+		print "hitrans.info The line voltage above which the UPS will switch to batteries\n" if $data{HITRANS};
+		print "lotrans.info The line voltage below which the UPS will switch to batteries\n" if $data{LOTRANS};
 		print "outputv.label Output \n" if $data{OUTPUTV};
 		print "outputv.info The voltage the UPS is supplying to the equipment\n" if $data{OUTPUTV};
 	} else {
+		print "hitrans.value $num{HITRANS}\n" if $data{HITRANS};
+		print "lotrans.value $num{LOTRANS}\n" if $data{LOTRANS};
 		print "linev.value $num{LINEV}\n" if $data{LINEV};
 		print "outputv.value $num{OUTPUTV}\n" if $data{OUTPUTV};
 	}
@@ -153,7 +160,7 @@ sub linevolts {
 
 sub battvolts {
 	if( $ARGV[0] eq 'config' ) {
-		print "graph_title Battery Voltage $data{MODEL}\n";
+		print "graph_title UPS $data{UPSNAME} battery voltage\n";
 		print "graph_category Sensors\n";
 		print "graph_vlabel volts\n";
         print "graph_args --alt-autoscale\n";
