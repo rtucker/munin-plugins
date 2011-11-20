@@ -1,0 +1,168 @@
+#!/usr/bin/perl
+# 
+# Plugin to monitor apcupsd
+# 
+# Contributed by Behan Webster <thomas@verchow.com>
+# Local mods by Ryan Tucker <rtucker@gmail.com>
+# 
+#%# family=auto
+#%# capabilities=autoconf
+
+my $apcaccess="/sbin/apcaccess";
+
+if ($ARGV[0] and $ARGV[0] eq 'autoconf') {
+	if( -f $apcaccess ) {
+		print "yes\n";
+		exit 0;
+	} else {
+		print "no (apcaccess not found)\n";
+		exit 1;
+	}
+}
+
+my %data;
+my %num;
+open( APCACCESS, "$apcaccess |" ) || die "$apcaccess: $!\n";
+while( <APCACCESS> ) {
+	$data{$1} = $2 if /^(\S+)\s+:\s+(.+?)$/;
+	$num{$1} = $2 if /^(\S+)\s+:\s+(\S+)/;
+}
+close APCACCESS;
+
+my %func = (
+	'volts' => \&volts, 
+	'times' => \&times,
+	'status' => \&status,
+	'temp' => \&temp,
+	'freq' => \&freq,
+    'linevolts' => \&linevolts,
+);
+
+$0 =~ /apcups_(.+)*$/;
+exit 2 unless defined $func{$1};
+
+&{$func{$1}};
+exit 0;
+
+sub temp {
+	if( $ARGV[0] eq 'config' ) {
+		print "graph_title Temperature $data{MODEL}\n";
+		print "graph_category Sensors\n";
+		print "graph_vlabel temp in °C\n";
+		print "itemp.label temperature\n";
+		print "itemp.info The internal UPS temperature\n";
+	} else {
+		print "itemp.value $num{ITEMP}\n" if $data{ITEMP};
+	}
+}
+
+sub times {
+	if( $ARGV[0] eq 'config' ) {
+		print "graph_title Times $data{MODEL}\n";
+		print "graph_category Sensors\n";
+		print "graph_vlabel minutes\n";
+		print "timeleft.label Time left\n" if $data{TIMELEFT};
+		print "timeleft.info The remaining runtime left on batteries as estimated by the UPS\n" if $data{TIMELEFT};
+		print "mintimel.label Min time\n" if $data{MINTIMEL};
+		print "mintimel.info apcupsd will shutdown your system if the remaining runtime equals or is below this point\n" if $data{MINTIMEL};
+		print "maxtime.label Max time\n" if defined $num{MAXTIME};
+		print "maxtime.info apcupsd will shutdown your system if the time on batteries exceeds this value (0 = disable)\n" if defined $num{MAXTIME};
+		print "dlowbatt.label Urgent time\n" if $data{DLOWBATT};
+		print "dlowbatt.info The remaining runtime below which the UPS sends the low battery signal. At this point apcupsd will force an immediate emergency shutdown.\n" if $data{DLOWBATT};
+		print "tonbatt.label On battery\n" if defined $num{TONBATT};
+		print "tonbatt.info Time on batteries.\n" if defined $num{TONBATT};
+	} else {
+		print "timeleft.value $num{TIMELEFT}\n" if $data{TIMELEFT};
+		print "mintimel.value $num{MINTIMEL}\n" if $data{MINTIMEL};
+		print "maxtime.value ", int ($num{MAXTIME} / 60 + 0.5), "\n" if defined $num{MAXTIME};
+		print "dlowbatt.value ", $num{DLOWBATT} + 0, "\n" if $data{DLOWBATT};
+		print "tonbatt.value ", int ($num{TONBATT} / 60 + 0.5), "\n" if defined $num{TONBATT};
+	}
+}
+
+sub status {
+	if( $ARGV[0] eq 'config' ) {
+		print "graph_title Status $data{MODEL}\n";
+		print "graph_category Sensors\n";
+		print "graph_vlabel %\n";
+        print "graph_args --logarithmic -l 1 -u 100\n";
+		print "loadpct.label % load\n" if $data{LOADPCT};
+		print "loadpct.info The percentage of load capacity as estimated by the UPS\n" if $data{LOADPCT};
+		print "bcharge.label % charge\n" if $data{BCHARGE};
+		print "bcharge.info The percentage charge on the batteries\n" if $data{BCHARGE};
+	} else {
+		print "loadpct.value $num{LOADPCT}\n" if $data{LOADPCT};
+		print "bcharge.value $num{BCHARGE}\n" if $data{BCHARGE};
+	}
+}
+
+sub freq {
+	if( $ARGV[0] eq 'config' ) {
+		print "graph_title Frequency $data{MODEL}\n";
+		print "graph_category Sensors\n";
+		print "graph_vlabel Frequency in Hertz\n";
+		print "linefreq.label Line frequency\n";
+		print "linefreq.info The line frequency in Hertz\n";
+	} else {
+		print "linefreq.value $num{LINEFREQ}\n" if $data{LINEFREQ};
+	}
+}
+
+sub volts {
+	if( $ARGV[0] eq 'config' ) {
+		print "graph_title Voltage $data{MODEL}\n";
+		print "graph_category Sensors\n";
+		print "graph_vlabel volts\n";
+        print "graph_args --alt-autoscale\n";
+		print "hitrans.label Upper threshold\n" if $data{HITRANS};
+		print "lotrans.label Lower threshold\n" if $data{LOTRANS};
+		print "linev.label Line in\n" if $data{LINEV};
+		print "outputv.label Output \n" if $data{OUTPUTV};
+		print "battv.label Battery\n" if $data{BATTV};
+		print "hitrans.info The line voltage above which the UPS will switch to batteries\n" if $data{HITRANS};
+		print "lotrans.info The line voltage below which the UPS will switch to batteries\n" if $data{LOTRANS};
+		print "linev.info Current line voltage\n" if $data{LINEV};
+		print "outputv.info The voltage the UPS is supplying to the equipment\n" if $data{OUTPUTV};
+		print "battv.info The battery voltage\n" if $data{BATTV};
+	} else {
+		print "hitrans.value $num{HITRANS}\n" if $data{HITRANS};
+		print "lotrans.value $num{LOTRANS}\n" if $data{LOTRANS};
+		print "linev.value $num{LINEV}\n" if $data{LINEV};
+		print "outputv.value $num{OUTPUTV}\n" if $data{OUTPUTV};
+		print "battv.value $num{BATTV}\n" if $data{BATTV};
+	}
+}
+
+sub linevolts {
+	if( $ARGV[0] eq 'config' ) {
+		print "graph_title Line Voltage $data{MODEL}\n";
+		print "graph_category Sensors\n";
+		print "graph_vlabel volts\n";
+        print "graph_args --alt-autoscale\n";
+		print "linev.label Line in\n" if $data{LINEV};
+		print "linev.info Current line voltage at UPS input\n" if $data{LINEV};
+        print "linev.warning ", $num{NOMINV}-int(3*$num{NOMINV}/100), ":", $num{NOMINV}+int(3*$num{NOMINV}/100), "\n" if $data{NOMINV} and $data{LINEV};
+        print "linev.critical ", $num{NOMINV}-int(7*$num{NOMINV}/100), ":", $num{NOMINV}+int(7*$num{NOMINV}/100), "\n" if $data{NOMINV} and $data{LINEV};
+		print "outputv.label Output \n" if $data{OUTPUTV};
+		print "outputv.info The voltage the UPS is supplying to the equipment\n" if $data{OUTPUTV};
+	} else {
+		print "linev.value $num{LINEV}\n" if $data{LINEV};
+		print "outputv.value $num{OUTPUTV}\n" if $data{OUTPUTV};
+	}
+}
+
+sub battvolts {
+	if( $ARGV[0] eq 'config' ) {
+		print "graph_title Battery Voltage $data{MODEL}\n";
+		print "graph_category Sensors\n";
+		print "graph_vlabel volts\n";
+        print "graph_args --alt-autoscale\n";
+		print "battv.label Battery\n" if $data{BATTV};
+		print "battv.info The battery voltage\n" if $data{BATTV};
+		print "nombattv.label Nominal battery voltage\n" if $data{NOMBATTV};
+		print "nombattv.info The nominal battery voltage\n" if $data{NOMBATTV};
+	} else {
+		print "battv.value $num{BATTV}\n" if $data{BATTV};
+		print "nombattv.value $num{NOMBATTV}\n" if $data{NOMBATTV};
+	}
+}
