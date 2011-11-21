@@ -68,8 +68,8 @@ sub times {
 		print "graph_info The system last transferred to battery at $xonbatt due to <tt>$lastxfer</tt>.\n";
 		print "timeleft.label Remaining battery time\n" if $data{TIMELEFT};
 		print "timeleft.info Minutes of backup power available from batteries as estimated by the UPS\n" if $data{TIMELEFT};
-		print "timeleft.warning 10\n";
-		print "timeleft.critical 5\n";
+		print "timeleft.warning 10:\n";
+		print "timeleft.critical 5:\n";
 		print "mintimel.label Min time\n" if $data{MINTIMEL};
 		print "mintimel.info apcupsd will shut down your system if the remaining runtime equals or is below this point\n" if $data{MINTIMEL};
 		print "maxtime.label Max time\n" if defined $num{MAXTIME};
