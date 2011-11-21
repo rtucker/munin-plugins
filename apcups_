@@ -94,8 +94,8 @@ sub status {
 		print "loadpct.critical 80\n" if $data{LOADPCT};
 		print "bcharge.label % charge\n" if $data{BCHARGE};
 		print "bcharge.info The percentage charge on the batteries\n" if $data{BCHARGE};
-		print "bcharge.warning :25\n" if $data{BCHARGE};
-		print "bcharge.critical :10\n" if $data{BCHARGE};
+		print "bcharge.warning 25:\n" if $data{BCHARGE};
+		print "bcharge.critical 10:\n" if $data{BCHARGE};
 	} else {
 		print "loadpct.value $num{LOADPCT}\n" if $data{LOADPCT};
 		print "bcharge.value $num{BCHARGE}\n" if $data{BCHARGE};
