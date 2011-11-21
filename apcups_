@@ -37,6 +37,7 @@ my %func = (
 	'freq' => \&freq,
 	'linevolts' => \&linevolts,
 	'battvolts' => \&battvolts,
+	'power' => \&power,
 );
 
 $0 =~ /apcups_(.+)*$/;
@@ -177,3 +178,24 @@ sub battvolts {
 		print "nombattv.value $num{NOMBATTV}\n" if $data{NOMBATTV};
 	}
 }
+
+sub power {
+	if( $data{LOADPCT} ) {
+		my $nom = $ENV{'nompower'} || $num{NOMPOWER} || 1;
+		my $nomva = $nom / 0.6;
+		my $power = $nom * $num{LOADPCT} / 100;
+		if( $ARGV[0] eq 'config' ) {
+			print "graph_title UPS $data{UPSNAME} power consumption\n";
+			print "graph_category Sensors\n";
+			print "graph_vlabel watts\n";
+			print "graph_info The power draw, in watts.  This UPS does not report NOMPOWER to apcupsd, so you need to set env.nompower in the plugin configuration to the UPS's output power capacity in watts.  This is typically 60% of the number in the UPS model number.\n" if $nom == 1;
+			print "graph_info The power draw, in watts.  The output power capacity has been configured to $nom watts, or approximately $nomva volt-amperes.\n" if $ENV{'nompower'};
+			print "graph_info The power draw, in watts.  The output power capacity has been detected as $nom watts, or approximately $nomva volt-amperes.\n" unless 1 or $ENV{'nompower'};
+			print "power.label Power\n" if $data{LOADPCT};
+			print "power.info Active power draw in watts\n" if $data{LOADPCT};
+		} else {
+			print "power.value $power\n" if $data{LOADPCT};
+		}
+	}
+}
+# vim: set noet:
