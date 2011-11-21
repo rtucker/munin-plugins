@@ -190,7 +190,7 @@ sub power {
 			print "graph_vlabel watts\n";
 			print "graph_info The power draw, in watts.  This UPS does not report NOMPOWER to apcupsd, so you need to set env.nompower in the plugin configuration to the UPS's output power capacity in watts.  This is typically 60% of the number in the UPS model number.\n" if $nom == 1;
 			print "graph_info The power draw, in watts.  The output power capacity has been configured to $nom watts, or approximately $nomva volt-amperes.\n" if $ENV{'nompower'};
-			print "graph_info The power draw, in watts.  The output power capacity has been detected as $nom watts, or approximately $nomva volt-amperes.\n" unless 1 or $ENV{'nompower'};
+			print "graph_info The power draw, in watts.  The output power capacity has been detected as $nom watts, or approximately $nomva volt-amperes.\n" if $num{NOMPOWER} and not $ENV{'nompower'};
 			print "power.label Power\n" if $data{LOADPCT};
 			print "power.info Active power draw in watts\n" if $data{LOADPCT};
 		} else {
