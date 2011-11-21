@@ -89,8 +89,12 @@ sub status {
         print "graph_args --logarithmic -l 1 -u 100\n";
 		print "loadpct.label % load\n" if $data{LOADPCT};
 		print "loadpct.info The percentage of load capacity as estimated by the UPS\n" if $data{LOADPCT};
+		print "loadpct.warning 60\n" if $data{LOADPCT};
+		print "loadpct.critical 80\n" if $data{LOADPCT};
 		print "bcharge.label % charge\n" if $data{BCHARGE};
 		print "bcharge.info The percentage charge on the batteries\n" if $data{BCHARGE};
+		print "bcharge.warning :25\n" if $data{BCHARGE};
+		print "bcharge.critical :10\n" if $data{BCHARGE};
 	} else {
 		print "loadpct.value $num{LOADPCT}\n" if $data{LOADPCT};
 		print "bcharge.value $num{BCHARGE}\n" if $data{BCHARGE};
