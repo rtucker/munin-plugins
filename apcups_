@@ -60,34 +60,49 @@ sub temp {
 
 sub times {
 	if( $ARGV[0] eq 'config' ) {
+		my $lastxfer = $data{LASTXFER} || '(unknown)';
+		my $xonbatt = $data{XONBATT} || '(unknown)';
 		print "graph_title UPS $data{UPSNAME} times\n";
 		print "graph_category Sensors\n";
 		print "graph_vlabel minutes\n";
-		print "timeleft.label Time left\n" if $data{TIMELEFT};
-		print "timeleft.info The remaining runtime left on batteries as estimated by the UPS\n" if $data{TIMELEFT};
+		print "graph_info The system last transferred to battery at $xonbatt due to <tt>$lastxfer</tt>.\n";
+		print "timeleft.label Remaining battery time\n" if $data{TIMELEFT};
+		print "timeleft.info Minutes of backup power available from batteries as estimated by the UPS\n" if $data{TIMELEFT};
+		print "timeleft.warning 10\n";
+		print "timeleft.critical 5\n";
 		print "mintimel.label Min time\n" if $data{MINTIMEL};
-		print "mintimel.info apcupsd will shutdown your system if the remaining runtime equals or is below this point\n" if $data{MINTIMEL};
+		print "mintimel.info apcupsd will shut down your system if the remaining runtime equals or is below this point\n" if $data{MINTIMEL};
 		print "maxtime.label Max time\n" if defined $num{MAXTIME};
-		print "maxtime.info apcupsd will shutdown your system if the time on batteries exceeds this value (0 = disable)\n" if defined $num{MAXTIME};
+		print "maxtime.info apcupsd will shut down your system if the time on batteries exceeds this value (0 = disable)\n" if defined $num{MAXTIME};
 		print "dlowbatt.label Urgent time\n" if $data{DLOWBATT};
 		print "dlowbatt.info The remaining runtime below which the UPS sends the low battery signal. At this point apcupsd will force an immediate emergency shutdown.\n" if $data{DLOWBATT};
-		print "tonbatt.label On battery\n" if defined $num{TONBATT};
+		print "tonbatt.label Time on battery\n" if defined $num{TONBATT};
 		print "tonbatt.info Time on batteries.\n" if defined $num{TONBATT};
+		print "cumonbatt.label Cumulative time on battery\n" if defined $num{CUMONBATT};
+		print "cumonbatt.info Total time on batteries since apcupsd started.\n" if defined $num{CUMONBATT};
 	} else {
 		print "timeleft.value $num{TIMELEFT}\n" if $data{TIMELEFT};
 		print "mintimel.value $num{MINTIMEL}\n" if $data{MINTIMEL};
-		print "maxtime.value ", int ($num{MAXTIME} / 60 + 0.5), "\n" if defined $num{MAXTIME};
+		print "maxtime.value ", ($num{MAXTIME} / 60), "\n" if defined $num{MAXTIME};
 		print "dlowbatt.value ", $num{DLOWBATT} + 0, "\n" if $data{DLOWBATT};
-		print "tonbatt.value ", int ($num{TONBATT} / 60 + 0.5), "\n" if defined $num{TONBATT};
+		print "tonbatt.value ", ($num{TONBATT} / 60), "\n" if defined $num{TONBATT};
+		print "cumonbatt.value ", ($num{CUMONBATT} / 60), "\n" if defined $num{CUMONBATT};
 	}
 }
 
 sub status {
 	if( $ARGV[0] eq 'config' ) {
-		print "graph_title UPS $data{UPSNAME} status\n";
+		my $model = $data{APCMODEL} || '(unknown)';
+		my $cumonbatt = $data{CUMONBATT} || '(unknown)';
+		my $lastxfer = $data{LASTXFER} || '(unknown)';
+		my $mandate = $data{MANDATE} || '(unknown)';
+		my $tonbatt = $data{TONBATT} || '(unknown)';
+		my $xonbatt = $data{XONBATT} || '(unknown)';
+		print "graph_title UPS $data{UPSNAME} status is $data{STATUS}\n";
 		print "graph_category Sensors\n";
-		print "graph_vlabel %\n";
-        print "graph_args --logarithmic -l 1 -u 100\n";
+		print "graph_vlabel % (log)\n";
+		print "graph_args --logarithmic --units si --lower-limit 1 --upper-limit 100\n";
+		print "graph_info This $model was manufactured on $mandate, and last transferred to battery at $xonbatt due to <tt>$lastxfer</tt> for $tonbatt. Cumulative battery time is $cumonbatt.\n";
 		print "loadpct.label % load\n" if $data{LOADPCT};
 		print "loadpct.info The percentage of load capacity as estimated by the UPS\n" if $data{LOADPCT};
 		print "loadpct.warning 60\n" if $data{LOADPCT};
@@ -119,7 +134,7 @@ sub volts {
 		print "graph_title UPS $data{UPSNAME} voltages\n";
 		print "graph_category Sensors\n";
 		print "graph_vlabel volts\n";
-        print "graph_args --alt-autoscale\n";
+		print "graph_args --alt-autoscale\n";
 		print "hitrans.label Upper threshold\n" if $data{HITRANS};
 		print "lotrans.label Lower threshold\n" if $data{LOTRANS};
 		print "linev.label Line in\n" if $data{LINEV};
@@ -141,19 +156,23 @@ sub volts {
 
 sub linevolts {
 	if( $ARGV[0] eq 'config' ) {
+		my $warningpct = 3;
+		my $criticalpct = 7;
+		my $nomv = $num{NOMINV} || '(unknown)';
 		print "graph_title UPS $data{UPSNAME} line voltages\n";
 		print "graph_category Sensors\n";
-		print "graph_vlabel volts\n";
-        print "graph_args --alt-autoscale\n";
+		print "graph_vlabel volts (AC)\n";
+		print "graph_args --alt-autoscale\n";
+		print "graph_info AC line voltages for the UPS system.  Nominal line voltage is $nomv volts.\n";
 		print "hitrans.label Upper threshold\n" if $data{HITRANS};
-		print "lotrans.label Lower threshold\n" if $data{LOTRANS};
-		print "linev.label Line in\n" if $data{LINEV};
-		print "linev.info Current line voltage at UPS input\n" if $data{LINEV};
-        print "linev.warning ", $num{NOMINV}-int(3*$num{NOMINV}/100), ":", $num{NOMINV}+int(3*$num{NOMINV}/100), "\n" if $data{NOMINV} and $data{LINEV};
-        print "linev.critical ", $num{NOMINV}-int(7*$num{NOMINV}/100), ":", $num{NOMINV}+int(7*$num{NOMINV}/100), "\n" if $data{NOMINV} and $data{LINEV};
 		print "hitrans.info The line voltage above which the UPS will switch to batteries\n" if $data{HITRANS};
+		print "lotrans.label Lower threshold\n" if $data{LOTRANS};
 		print "lotrans.info The line voltage below which the UPS will switch to batteries\n" if $data{LOTRANS};
-		print "outputv.label Output \n" if $data{OUTPUTV};
+		print "linev.label Input voltage\n" if $data{LINEV};
+		print "linev.info The line voltage at UPS input (Warning at ±$warningpct%, critical at ±$criticalpct%)\n" if $data{LINEV};
+		print "linev.warning ", $num{NOMINV}-int($warningpct*$num{NOMINV}/100), ":", $num{NOMINV}+int($warningpct*$num{NOMINV}/100), "\n" if $data{NOMINV} and $data{LINEV};
+		print "linev.critical ", $num{NOMINV}-int($criticalpct*$num{NOMINV}/100), ":", $num{NOMINV}+int($criticalpct*$num{NOMINV}/100), "\n" if $data{NOMINV} and $data{LINEV};
+		print "outputv.label Output voltage\n" if $data{OUTPUTV};
 		print "outputv.info The voltage the UPS is supplying to the equipment\n" if $data{OUTPUTV};
 	} else {
 		print "hitrans.value $num{HITRANS}\n" if $data{HITRANS};
@@ -165,14 +184,16 @@ sub linevolts {
 
 sub battvolts {
 	if( $ARGV[0] eq 'config' ) {
+		my $battdate = $data{BATTDATE} || '(unknown)';
 		print "graph_title UPS $data{UPSNAME} battery voltage\n";
 		print "graph_category Sensors\n";
-		print "graph_vlabel volts\n";
-        print "graph_args --alt-autoscale\n";
-		print "battv.label Battery\n" if $data{BATTV};
-		print "battv.info The battery voltage\n" if $data{BATTV};
+		print "graph_vlabel volts (DC)\n";
+		print "graph_args --alt-autoscale\n";
+		print "graph_info The battery pack was installed on $battdate.\n";
+		print "battv.label Battery voltage\n" if $data{BATTV};
+		print "battv.info DC voltage of the UPS battery pack\n" if $data{BATTV};
 		print "nombattv.label Nominal battery voltage\n" if $data{NOMBATTV};
-		print "nombattv.info The nominal battery voltage\n" if $data{NOMBATTV};
+		print "nombattv.info Expected nominal voltage for the battery pack (2.0 volts/cell)\n" if $data{NOMBATTV};
 	} else {
 		print "battv.value $num{BATTV}\n" if $data{BATTV};
 		print "nombattv.value $num{NOMBATTV}\n" if $data{NOMBATTV};
@@ -188,11 +209,11 @@ sub power {
 			print "graph_title UPS $data{UPSNAME} power consumption\n";
 			print "graph_category Sensors\n";
 			print "graph_vlabel watts\n";
-			print "graph_info The power draw, in watts.  This UPS does not report NOMPOWER to apcupsd, so you need to set env.nompower in the plugin configuration to the UPS's output power capacity in watts.  This is typically 60% of the number in the UPS model number.\n" if $nom == 1;
-			print "graph_info The power draw, in watts.  The output power capacity has been configured to $nom watts, or approximately $nomva volt-amperes.\n" if $ENV{'nompower'};
-			print "graph_info The power draw, in watts.  The output power capacity has been detected as $nom watts, or approximately $nomva volt-amperes.\n" if $num{NOMPOWER} and not $ENV{'nompower'};
-			print "power.label Power\n" if $data{LOADPCT};
-			print "power.info Active power draw in watts\n" if $data{LOADPCT};
+			print "graph_info Active (real) power draw, in watts, of the UPS load.  This UPS does not report NOMPOWER to apcupsd, so you need to set env.nompower in the plugin configuration to the UPS's output power capacity in watts.  This is typically 60% of the number in the UPS model number.\n" if $nom == 1;
+			print "graph_info Active (real) power draw, in watts, of the UPS load.  The output power capacity has been configured to $nom watts, or approximately $nomva volt-amperes.\n" if $ENV{'nompower'};
+			print "graph_info Active (real) power draw, in watts, of the UPS load.  The output power capacity of this UPS is $nom watts, or approximately $nomva volt-amperes.\n" if $num{NOMPOWER} and not $ENV{'nompower'};
+			print "power.label Real power\n" if $data{LOADPCT};
+			print "power.info Work done by load, kg·m^2 / s^3\n" if $data{LOADPCT};
 		} else {
 			print "power.value $power\n" if $data{LOADPCT};
 		}
