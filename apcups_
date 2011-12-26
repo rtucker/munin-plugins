@@ -156,8 +156,8 @@ sub volts {
 
 sub linevolts {
 	if( $ARGV[0] eq 'config' ) {
-		my $warningpct = 3;
-		my $criticalpct = 7;
+		my $warningpct = 5;
+		my $criticalpct = 8;
 		my $nomv = $num{NOMINV} || '(unknown)';
 		print "graph_title UPS $data{UPSNAME} line voltages\n";
 		print "graph_category Sensors\n";
