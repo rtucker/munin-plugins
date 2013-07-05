@@ -1,0 +1,77 @@
+#!/usr/bin/python -W ignore
+# -*- coding: utf-8 -*-
+"""
+A munin plugin for reading numbers from a serial line and spitting them
+out to munin, more or less.
+
+Ryan Tucker <rtucker@gmail.com>
+"""
+import os
+import serial
+import sys
+import time
+
+CONFIG = {
+    'deepfreeze': {
+        'label': 'deepfreeze',
+        'desc': 'Temperature of deep freeze in basement',
+        'port': '/dev/ttyACM0',
+        'units': 'degrees C',
+        'warning': '-23:-18',
+        'critical': ':-15',
+    }
+}
+
+def print_config(name):
+    print('\n'.join([
+        "graph_title Temperature of %(desc)s",
+        "graph_vlabel %(units)s",
+        "graph_category Sensors",
+        "graph_info This graph charts the sensed temperature of a device called '%(label)s'.",
+        #"%(label)s.min 0",
+        #"%(label)s.max 100",
+        "%(label)s.label %(units)s",
+        #"%(label)s.draw AREA",
+        "%(label)s.warning %(warning)s",
+        "%(label)s.critical %(critical)s",
+        ]) % CONFIG[name])
+
+def get_temperature_reading(port):
+    loopstart = time.time()
+    ser = serial.Serial(port, 9600)
+    ser.flush()
+    results = []
+    _ok = False
+    while not _ok:
+        if time.time() > loopstart+5:
+            _ok = True
+            break
+        row = ser.readline()
+        try:
+            datapoint = float(row)
+        except ValueError:
+            continue
+
+        results.append(datapoint)
+
+    ser.close()
+
+    # get rid of first/last values
+    results.pop(0)
+    results.pop()
+    temperature = sum(results)/len(results)
+
+    return temperature
+
+def main():
+    """main function to handle munin fun"""
+    myname = os.path.split(sys.argv[0])[-1].split('_')[1]
+    if len(sys.argv) > 1 and sys.argv[1] == 'config':
+        print_config(myname)
+    else:
+        temperature = get_temperature_reading(CONFIG[myname]['port'])
+        print('%s.value %g' % (CONFIG[myname]['label'], temperature))
+
+if __name__ == '__main__':
+    main()
+
