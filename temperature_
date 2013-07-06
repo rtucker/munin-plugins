@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 A munin plugin for reading numbers from a serial line and spitting them
-out to munin, more or less.
+out to munin, more or less.  Optimized for temperatures.
 
 Ryan Tucker <rtucker@gmail.com>
 """
@@ -11,66 +11,68 @@ import serial
 import sys
 import time
 
+# Configure each temperature-sensing device here.
 CONFIG = {
     'deepfreeze': {
         'label': 'deepfreeze',
-        'desc': 'Temperature of deep freeze in basement',
+        'desc': 'deep freeze in basement',
         'port': '/dev/ttyACM0',
         'units': 'degrees C',
         'warning': '-23:-18',
         'critical': ':-15',
+        'sampletime': 3,
     }
 }
 
-def print_config(name):
-    print('\n'.join([
+def generate_config(name):
+    """Generates a configuration for the Munin chart."""
+    return '\n'.join([
         "graph_title Temperature of %(desc)s",
         "graph_vlabel %(units)s",
         "graph_category Sensors",
-        "graph_info This graph charts the sensed temperature of a device called '%(label)s'.",
-        #"%(label)s.min 0",
-        #"%(label)s.max 100",
+        "graph_args --alt-autoscale",
+        "graph_info This graph charts the sensed temperature of a device " +
+            "called '%(label)s', which is described as '%(desc)s'. " +
+            "(Port: %(port)s)",
         "%(label)s.label %(units)s",
-        #"%(label)s.draw AREA",
         "%(label)s.warning %(warning)s",
         "%(label)s.critical %(critical)s",
-        ]) % CONFIG[name])
+    ]) % CONFIG[name]
 
-def get_temperature_reading(port):
+def get_reading(port, sampletime=5):
+    """Gets a reading from the device on <port>.
+
+       Averages the reading over <sampletime> seconds.
+    """
     loopstart = time.time()
     ser = serial.Serial(port, 9600)
     ser.flush()
+
     results = []
     _ok = False
-    while not _ok:
-        if time.time() > loopstart+5:
-            _ok = True
-            break
+
+    while not _ok or (time.time() < loopstart+sampletime):
         row = ser.readline()
         try:
             datapoint = float(row)
+            _ok = True
+            results.append(datapoint)
         except ValueError:
             continue
 
-        results.append(datapoint)
-
     ser.close()
 
-    # get rid of first/last values
-    results.pop(0)
-    results.pop()
-    temperature = sum(results)/len(results)
-
-    return temperature
+    return sum(results)/len(results)
 
 def main():
     """main function to handle munin fun"""
     myname = os.path.split(sys.argv[0])[-1].split('_')[1]
     if len(sys.argv) > 1 and sys.argv[1] == 'config':
-        print_config(myname)
+        print(generate_config(myname))
     else:
-        temperature = get_temperature_reading(CONFIG[myname]['port'])
-        print('%s.value %g' % (CONFIG[myname]['label'], temperature))
+        reading = get_reading(port=CONFIG[myname]['port'],
+                              sampletime=CONFIG[myname]['sampletime'])
+        print('%s.value %g' % (CONFIG[myname]['label'], reading))
 
 if __name__ == '__main__':
     main()
