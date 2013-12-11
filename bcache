@@ -1,0 +1,23 @@
+#!/bin/bash
+
+BCACHE=0
+
+case $1 in
+   config)
+        cat <<'EOM'
+graph_title bcache cache statistics
+graph_vlabel Cache accesses
+cache_bypass_hits.label Cache bypass hits
+cache_bypass_misses.label Cache bypass misses
+cache_hits.label Cache hits
+cache_misses.label Cache misses
+cache_miss_collisions.label Cache miss collisions
+cache_readaheads.label Cache readaheads
+EOM
+        exit 0;;
+esac
+
+for i in cache_bypass_hits cache_bypass_misses cache_hits cache_miss_collisions cache_misses cache_readaheads; do
+	echo -n "$i.value "
+	cat /sys/block/bcache${BCACHE}/bcache/stats_five_minute/$i
+done
