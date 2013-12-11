@@ -1,23 +1,93 @@
 #!/bin/bash
+# based from: http://lisas.de/~adrian/bcache-tools/bcache
 
-BCACHE=0
+fixsuffixes () {
+	# turn things like 256M into plain ol integers
+	result=$(echo $1 | sed 's/G/*1024M/' | sed 's/M/*1024k/' | sed 's/k/*1024/' | bc)
+}
+
+# isolate device IDs
+for i in $(ls -d /sys/block/bcache*); do
+	BCACHE="${BCACHE} $(basename $i)"
+done
+
+[ -z "$BCACHE" ] && exit 1
 
 case $1 in
    config)
-        cat <<'EOM'
-graph_title bcache cache statistics
-graph_vlabel Cache accesses
-cache_bypass_hits.label Cache bypass hits
-cache_bypass_misses.label Cache bypass misses
-cache_hits.label Cache hits
-cache_misses.label Cache misses
-cache_miss_collisions.label Cache miss collisions
-cache_readaheads.label Cache readaheads
-EOM
+		echo "multigraph bcache_backing"
+		echo "graph_title bcache backing device statistics"
+		echo "graph_vlabel Cache accesses"
+		echo "graph_category disk"
+
+		for cache in ${BCACHE}; do
+			echo "${cache}_bypass_hits.label ${cache} bypass hits"
+			echo "${cache}_bypass_misses.label ${cache} bypass misses"
+			echo "${cache}_hits.label ${cache} hits"
+			echo "${cache}_misses.label ${cache} misses"
+			echo "${cache}_miss_collisions.label ${cache} miss collisions"
+			echo "${cache}_readaheads.label ${cache} readaheads"
+		done
+
+		echo "multigraph bcache_dirty"
+		echo "graph_title bcache dirty data quantity"
+		echo "graph_vlabel Bytes"
+		echo "graph_category disk"
+
+		for cache in ${BCACHE}; do
+			echo "${cache}_dirty_data.label ${cache} dirty bytes"
+		done
+
+		for cache in ${BCACHE}; do
+			echo ""
+			echo "multigraph bcache_backing.${cache}"
+			echo "graph_title ${cache} backing device statistics"
+			echo "graph_vlabel Cache accesses"
+			echo "graph_category disk"
+			echo "bypass_hits.label bypass hits"
+			echo "bypass_misses.label bypass misses"
+			echo "hits.label hits"
+			echo "misses.label misses"
+			echo "miss_collisions.label miss collisions"
+			echo "readaheads.label readaheads"
+			echo ""
+			echo "multigraph bcache_dirty.${cache}"
+			echo "graph_title ${cache} dirty data quantity"
+			echo "graph_vlabel Bytes"
+			echo "graph_category disk"
+			echo "dirty_data.label dirty bytes"
+		done
+
         exit 0;;
 esac
 
-for i in cache_bypass_hits cache_bypass_misses cache_hits cache_miss_collisions cache_misses cache_readaheads; do
-	echo -n "$i.value "
-	cat /sys/block/bcache${BCACHE}/bcache/stats_five_minute/$i
+echo "multigraph bcache_backing"
+for cache in ${BCACHE}; do
+	for i in bypass_hits bypass_misses hits miss_collisions misses readaheads; do
+		echo -n "${cache}_${i}.value "
+		cat /sys/block/${cache}/bcache/stats_five_minute/cache_${i}
+	done
 done
+
+echo ""
+echo "multigraph bcache_dirty"
+for cache in ${BCACHE}; do
+	echo -n "${cache}_dirty_data.value "
+	fixsuffixes $(cat /sys/block/${cache}/bcache/dirty_data)
+	echo $result
+done
+
+for cache in ${BCACHE}; do
+	echo ""
+	echo "multigraph bcache_backing.${cache}"
+	for i in bypass_hits bypass_misses hits miss_collisions misses readaheads; do
+		echo -n "${i}.value "
+		cat /sys/block/${cache}/bcache/stats_five_minute/cache_${i}
+	done
+	echo ""
+	echo "multigraph bcache_dirty.${cache}"
+	echo -n "dirty_data.value "
+	fixsuffixes $(cat /sys/block/${cache}/bcache/dirty_data)
+	echo $result
+done
+
