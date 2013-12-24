@@ -11,9 +11,17 @@ for i in $(ls -d /sys/block/bcache*); do
 	BCACHE="${BCACHE} $(basename $i)"
 done
 
-[ -z "$BCACHE" ] && exit 1
-
 case $1 in
+   autoconf)
+        if [ -n "$BCACHE" ]; then
+            echo yes
+            exit 0
+        else
+            echo no
+            exit 0
+        fi
+        ;;
+
    config)
 		echo "multigraph bcache_backing"
 		echo "graph_title bcache backing device statistics"
@@ -75,7 +83,8 @@ case $1 in
 			echo "bypassed.label bypassed bytes"
 		done
 
-        exit 0;;
+        exit 0
+        ;;
 esac
 
 echo "multigraph bcache_backing"
