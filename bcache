@@ -49,6 +49,7 @@ case $1 in
 
         for cache in ${BCACHE}; do
             echo "${cache}_dirty_data.label ${cache} dirty bytes"
+            echo "${cache}_writeback_target.label ${cache} writeback target"
         done
 
         echo ""
@@ -79,6 +80,7 @@ case $1 in
             echo "graph_vlabel Bytes"
             echo "graph_category disk"
             echo "dirty_data.label dirty bytes"
+            echo "writeback_target.label writeback target"
             echo ""
             echo "multigraph bcache_bypassed.${cache}"
             echo "graph_title ${cache} bypassed I/O"
@@ -105,6 +107,9 @@ for cache in ${BCACHE}; do
     echo -n "${cache}_dirty_data.value "
     fixsuffixes $(cat /sys/block/${cache}/bcache/dirty_data)
     echo $result
+    echo -n "${cache}_writeback_target.value "
+    fixsuffixes $(cat /sys/block/${cache}/bcache/writeback_rate_debug | grep 'target:' | cut -f3)
+    echo $result
 done
 
 echo ""
@@ -126,6 +131,9 @@ for cache in ${BCACHE}; do
     echo "multigraph bcache_dirty.${cache}"
     echo -n "dirty_data.value "
     fixsuffixes $(cat /sys/block/${cache}/bcache/dirty_data)
+    echo $result
+    echo -n "writeback_target.value "
+    fixsuffixes $(cat /sys/block/${cache}/bcache/writeback_rate_debug | grep 'target:' | cut -f3)
     echo $result
 
     echo ""
