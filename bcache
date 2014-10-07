@@ -1,4 +1,8 @@
 #!/bin/bash
+#
+  #%# family=auto
+  #%# capabilities=autoconf
+#
 # based from: http://lisas.de/~adrian/bcache-tools/bcache
 
 fixsuffixes () {

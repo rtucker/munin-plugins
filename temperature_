@@ -21,6 +21,8 @@ CONFIG = {
         'warning': '-23:-18',
         'critical': ':-15',
         'sampletime': 3,
+        'sane_max': 20,
+        'sane_min': -60,
     }
 }
 
@@ -39,7 +41,7 @@ def generate_config(name):
         "%(label)s.critical %(critical)s",
     ]) % CONFIG[name]
 
-def get_reading(port, sampletime=5):
+def get_reading(port, sampletime=5, sane_max=None, sane_min=None):
     """Gets a reading from the device on <port>.
 
        Averages the reading over <sampletime> seconds.
@@ -55,8 +57,9 @@ def get_reading(port, sampletime=5):
         row = ser.readline()
         try:
             datapoint = float(row)
-            _ok = True
-            results.append(datapoint)
+            if (sane_min is None or datapoint > sane_min) and (sane_max is None or datapoint < sane_max):
+                _ok = True
+                results.append(datapoint)
         except ValueError:
             continue
 
@@ -71,7 +74,9 @@ def main():
         print(generate_config(myname))
     else:
         reading = get_reading(port=CONFIG[myname]['port'],
-                              sampletime=CONFIG[myname]['sampletime'])
+                              sampletime=CONFIG[myname]['sampletime'],
+                              sane_max=CONFIG[myname]['sane_max'],
+                              sane_min=CONFIG[myname]['sane_min'])
         print('%s.value %g' % (CONFIG[myname]['label'], reading))
 
 if __name__ == '__main__':
