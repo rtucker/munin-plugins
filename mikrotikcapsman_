@@ -32,33 +32,41 @@ if (!defined($Session)) {
 
 ###############################################################################
 ## Execution
-my $table = $Session->get_table(-baseoid => $WLCMROID);
+my $ifaces = {};
 
-if (!defined $table) {
+my $ifacetable = $Session->get_table(-baseoid => $IFACENAMEOID);
+
+if (!defined $ifacetable) {
     my $err = $Session->error;
     print "ERROR: $err\n";
     return 0;
 }
 
-my $ifaces = {};
+for my $entry (sort keys %{$ifacetable}) {
+    my $ifaceid = (split /\./, $entry)[-1];
+    my $ifacename = $ifacetable->{$entry};
 
-for my $entry (sort keys %{$table}) {
+    if ($ifacename =~ /^cap/) {
+        $ifaces->{$ifaceid}->{count} = 0;
+        $ifaces->{$ifaceid}->{name} = $ifacename;
+    }
+}
+
+my $wlcmrtable = $Session->get_table(-baseoid => $WLCMROID);
+
+if (!defined $wlcmrtable) {
+    my $err = $Session->error;
+    print "ERROR: $err\n";
+    return 0;
+}
+
+for my $entry (sort keys %{$wlcmrtable}) {
     my $tail;
     ($tail = $entry) =~ s/^$WLCMROID//;
-    my ($var_num, $iface_id) = (split /\./, $tail)[1, -1];
+    my ($varnum, $ifaceid) = (split /\./, $tail)[1, -1];
 
-    if (!defined ($ifaces->{$iface_id})) {
-        $ifaces->{$iface_id}->{count} = 0;
-        $ifaces->{$iface_id}->{name} = "";
-
-        my $ifaceoid = $IFACENAMEOID . "." . $iface_id;
-        if (my $ifaceresult = $Session->get_request(-varbindlist => [$ifaceoid])) {
-            $ifaces->{$iface_id}->{name} = $ifaceresult->{$ifaceoid};
-        }
-    }
-
-    if ($var_num == 1) {
-        $ifaces->{$iface_id}->{count}++;
+    if ($varnum == 1) {
+        $ifaces->{$ifaceid}->{count}++;
     }
 }
 
