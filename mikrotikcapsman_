@@ -86,10 +86,10 @@ if ($ARGV[0] && $ARGV[0] eq "config") {
   print "graph_vlabel Number\n";
   print "graph_scale no\n";
 
-  while ( my ($iface, $data) = each(%$ifaces) ) {
-    print "capif_" . $iface . "_count.label " . $data->{name} . "\n";
+  for my $iface (sort keys %{$ifaces}) {
+    print "capif_" . $iface . "_count.label " . $ifaces->{$iface}->{name} . "\n";
     print "capif_" . $iface . "_count.type "  . "GAUGE\n";
-    print "capif_" . $iface . "_count.info "  . "Number of current connections to " . $data->{name} . "\n";
+    print "capif_" . $iface . "_count.info "  . "Number of current connections to " . $ifaces->{$iface}->{name} . "\n";
   }
 
   $Session->close;
@@ -98,7 +98,7 @@ if ($ARGV[0] && $ARGV[0] eq "config") {
 
 ###############################################################################
 ## Fetch
-while ( my ($iface, $data) = each(%$ifaces) ) {
-    print "capif_" . $iface . "_count.value " . $data->{count} . "\n";
+for my $iface (sort keys %{$ifaces}) {
+    print "capif_" . $iface . "_count.value " . $ifaces->{$iface}->{count} . "\n";
 }
 
