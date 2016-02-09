@@ -33,6 +33,10 @@ if (!defined($Session)) {
 ###############################################################################
 ## Execution
 my $ifaces = {};
+my $allAPs = 0;
+
+$ifaces->{$allAPs}->{count} = 0;
+$ifaces->{$allAPs}->{name} = "all APs";
 
 my $ifacetable = $Session->get_table(-baseoid => $IFACENAMEOID);
 
@@ -67,6 +71,7 @@ for my $entry (sort keys %{$wlcmrtable}) {
 
     if ($varnum == 1) {
         $ifaces->{$ifaceid}->{count}++;
+        $ifaces->{$allAPs}->{count}++;
     }
 }
 
