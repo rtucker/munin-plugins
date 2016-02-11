@@ -33,10 +33,6 @@ if (!defined($Session)) {
 ###############################################################################
 ## Execution
 my $ifaces = {};
-my $allAPs = 0;
-
-$ifaces->{$allAPs}->{count} = 0;
-$ifaces->{$allAPs}->{name} = "all APs";
 
 my $ifacetable = $Session->get_table(-baseoid => $IFACENAMEOID);
 
@@ -71,7 +67,6 @@ for my $entry (sort keys %{$wlcmrtable}) {
 
     if ($varnum == 1) {
         $ifaces->{$ifaceid}->{count}++;
-        $ifaces->{$allAPs}->{count}++;
     }
 }
 
@@ -89,7 +84,8 @@ if ($ARGV[0] && $ARGV[0] eq "config") {
   for my $iface (sort keys %{$ifaces}) {
     print "capif_" . $iface . "_count.label " . $ifaces->{$iface}->{name} . "\n";
     print "capif_" . $iface . "_count.type "  . "GAUGE\n";
-    print "capif_" . $iface . "_count.info "  . "Number of current connections to " . $ifaces->{$iface}->{name} . "\n";
+    print "capif_" . $iface . "_count.draw "  . "AREASTACK\n";
+    print "capif_" . $iface . "_count.info "  . "Devices registered to " . $ifaces->{$iface}->{name} . "\n";
   }
 
   $Session->close;
